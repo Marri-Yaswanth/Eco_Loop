@@ -7,105 +7,105 @@
 @layer base {
   :root {
 
-    --background: 160 45% 98%;
+    --background: 150 45% 96%;
 
-    --foreground: 180 18% 15%;
+    --foreground: 156 28% 14%;
 
     --card: 0 0% 100%;
 
-    --card-foreground: 180 18% 15%;
+    --card-foreground: 156 28% 14%;
 
     --popover: 0 0% 100%;
 
-    --popover-foreground: 180 18% 15%;
+    --popover-foreground: 156 28% 14%;
 
-    --primary: 167 76% 35%;
+    --primary: 151 74% 33%;
 
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 170 27% 92%;
+    --secondary: 153 34% 90%;
 
-    --secondary-foreground: 175 30% 24%;
+    --secondary-foreground: 154 35% 23%;
 
-    --muted: 172 27% 93%;
+    --muted: 153 24% 91%;
 
-    --muted-foreground: 177 14% 40%;
+    --muted-foreground: 156 14% 38%;
 
-    --accent: 190 72% 92%;
+    --accent: 157 52% 87%;
 
-    --accent-foreground: 190 62% 26%;
+    --accent-foreground: 156 42% 24%;
 
     --destructive: 0 74% 51%;
 
     --destructive-foreground: 0 0% 98%;
 
-    --border: 174 20% 85%;
+    --border: 154 20% 80%;
 
-    --input: 174 20% 85%;
+    --input: 154 20% 80%;
 
-    --ring: 167 76% 35%;
+    --ring: 151 74% 33%;
 
-    --chart-1: 167 76% 35%;
+    --chart-1: 151 74% 33%;
 
-    --chart-2: 203 76% 42%;
+    --chart-2: 169 71% 34%;
 
-    --chart-3: 35 90% 50%;
+    --chart-3: 41 86% 48%;
 
-    --chart-4: 143 58% 45%;
+    --chart-4: 129 52% 41%;
 
-    --chart-5: 5 74% 58%;
+    --chart-5: 11 74% 52%;
 
     --radius: 0.5rem
   }
   .dark {
 
-    --background: 186 28% 9%;
+    --background: 160 32% 10%;
 
-    --foreground: 174 29% 95%;
+    --foreground: 154 34% 95%;
 
-    --card: 186 24% 12%;
+    --card: 159 28% 13%;
 
-    --card-foreground: 174 29% 95%;
+    --card-foreground: 154 34% 95%;
 
-    --popover: 186 24% 12%;
+    --popover: 159 28% 13%;
 
-    --popover-foreground: 174 29% 95%;
+    --popover-foreground: 154 34% 95%;
 
-    --primary: 166 74% 49%;
+    --primary: 154 69% 54%;
 
-    --primary-foreground: 182 31% 10%;
+    --primary-foreground: 160 33% 12%;
 
-    --secondary: 184 23% 17%;
+    --secondary: 158 23% 18%;
 
-    --secondary-foreground: 173 28% 92%;
+    --secondary-foreground: 153 29% 92%;
 
-    --muted: 184 23% 17%;
+    --muted: 158 23% 18%;
 
-    --muted-foreground: 175 13% 70%;
+    --muted-foreground: 154 13% 72%;
 
-    --accent: 193 34% 20%;
+    --accent: 166 34% 22%;
 
-    --accent-foreground: 179 36% 93%;
+    --accent-foreground: 154 40% 90%;
 
     --destructive: 0 68% 48%;
 
     --destructive-foreground: 0 0% 98%;
 
-    --border: 186 16% 24%;
+    --border: 159 16% 26%;
 
-    --input: 186 16% 24%;
+    --input: 159 16% 26%;
 
-    --ring: 166 74% 49%;
+    --ring: 154 69% 54%;
 
-    --chart-1: 166 74% 49%;
+    --chart-1: 154 69% 54%;
 
-    --chart-2: 203 76% 55%;
+    --chart-2: 174 73% 52%;
 
-    --chart-3: 40 92% 62%;
+    --chart-3: 45 89% 62%;
 
-    --chart-4: 145 56% 58%;
+    --chart-4: 131 64% 65%;
 
-    --chart-5: 4 82% 66%
+    --chart-5: 12 84% 67%
   }
 }
 
@@ -119,5 +119,62 @@
     @apply bg-background text-foreground;
     background-image: radial-gradient(circle at 10% 10%, hsl(var(--primary) / 0.08), transparent 35%), radial-gradient(circle at 90% 30%, hsl(var(--chart-2) / 0.08), transparent 30%);
     background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .text-green-600 {
+    color: hsl(var(--primary));
+  }
+
+  .bg-green-100 {
+    background-color: hsl(var(--primary) / 0.16);
+  }
+
+  .text-green-800 {
+    color: hsl(var(--primary));
+  }
+
+  .dark body {
+    background-image: radial-gradient(circle at 12% 8%, hsl(var(--primary) / 0.14), transparent 40%), radial-gradient(circle at 84% 22%, hsl(var(--chart-2) / 0.12), transparent 34%);
+  }
+
+  .dark .from-green-50 {
+    --tw-gradient-from: hsl(186 28% 11%) var(--tw-gradient-from-position);
+    --tw-gradient-to: hsl(186 28% 11% / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+
+  .dark .to-blue-50 {
+    --tw-gradient-to: hsl(194 26% 14%) var(--tw-gradient-to-position);
+  }
+
+  .dark .bg-white {
+    background-color: hsl(var(--card));
+  }
+
+  .dark .bg-gray-100 {
+    background-color: hsl(var(--secondary));
+  }
+
+  .dark .text-gray-900,
+  .dark .text-gray-800,
+  .dark .text-gray-700 {
+    color: hsl(var(--foreground));
+  }
+
+  .dark .text-gray-600,
+  .dark .text-gray-500 {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .dark .text-gray-400 {
+    color: hsl(var(--muted-foreground) / 0.8);
+  }
+
+  .dark .border-b,
+  .dark .border-gray-200,
+  .dark .border-gray-100 {
+    border-color: hsl(var(--border));
   }
 }

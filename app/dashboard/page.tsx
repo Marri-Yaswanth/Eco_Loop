@@ -249,7 +249,7 @@ export default function UserDashboard() {
             ) : (
               <div className="space-y-4">
                 {recentRequests.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/60 transition-colors">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h4 className="font-semibold text-gray-900">{request.waste_type}</h4>

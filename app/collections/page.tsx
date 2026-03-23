@@ -202,7 +202,7 @@ export default function CollectionsPage() {
         ) : (
           <div className="space-y-4">
             {filteredRequests.map((request) => (
-              <Card key={request.id} className="hover:shadow-md transition-shadow">
+              <Card key={request.id} className="hover:shadow-md hover:bg-accent/40 transition-[box-shadow,background-color]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
