@@ -12,6 +12,21 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message.length > 0) {
+      return message
+    }
+  }
+
+  return 'Failed to login'
+}
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -33,6 +48,24 @@ function LoginForm() {
       })
 
       if (error) throw error
+
+      // Ensure a profile row exists for this user.
+      const displayName =
+        (typeof data.user.user_metadata?.name === 'string' && data.user.user_metadata.name.trim().length > 0
+          ? data.user.user_metadata.name.trim()
+          : data.user.email?.split('@')[0]) || 'User'
+
+      const { error: profileUpsertError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: data.user.id,
+            name: displayName,
+          },
+          { onConflict: 'id' }
+        )
+
+      if (profileUpsertError) throw profileUpsertError
 
       // Get user profile to determine role
       const { data: profile } = await supabase
@@ -59,7 +92,7 @@ function LoginForm() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to login',
+        description: getErrorMessage(error),
         variant: 'destructive',
       })
     } finally {
@@ -71,7 +104,7 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome to GreenSync</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Welcome to EcoLoop</CardTitle>
           <CardDescription className="text-center">
             Sign in to your account to continue
           </CardDescription>

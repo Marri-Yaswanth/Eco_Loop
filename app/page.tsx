@@ -1,125 +1,157 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Leaf, Recycle, Truck, BarChart3 } from "lucide-react";
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AreaChart, Leaf, Route, ShieldCheck } from 'lucide-react'
+import { SiteNavbar } from '@/components/site-navbar'
+import { SiteFooter } from '@/components/site-footer'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-600">GreenSync</h1>
+    <div className="min-h-screen">
+      <SiteNavbar />
+
+      <main>
+        <section className="relative overflow-hidden border-b border-border/50">
+          <div className="absolute -left-20 top-20 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
+          <div className="absolute -right-20 top-16 h-64 w-64 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-24 lg:px-8">
+            <div>
+              <p className="mb-4 inline-flex rounded-full border border-emerald-600/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                Civic Waste Intelligence Platform
+              </p>
+              <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+                Transform Waste Pickup Into a Predictable, Smart Service
+              </h1>
+              <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
+                EcoLoop helps citizens raise requests, helps teams route vehicles efficiently, and helps administrators monitor city-wide cleanliness with real-time analytics.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/register">
+                  <Button size="lg">Create Account</Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="lg" variant="outline">Open Dashboard</Button>
+                </Link>
+              </div>
+            </div>
+
+            <Card className="border-border/70 bg-card/90 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-xl">Operations Snapshot</CardTitle>
+                <CardDescription>Live-style mock indicators for demonstration</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg bg-emerald-500/10 p-4">
+                  <p className="text-xs text-muted-foreground">Pickup SLA</p>
+                  <p className="mt-1 text-2xl font-bold text-emerald-600">96%</p>
+                </div>
+                <div className="rounded-lg bg-cyan-500/10 p-4">
+                  <p className="text-xs text-muted-foreground">Active Routes</p>
+                  <p className="mt-1 text-2xl font-bold text-cyan-600">42</p>
+                </div>
+                <div className="rounded-lg bg-amber-500/10 p-4">
+                  <p className="text-xs text-muted-foreground">Pending Requests</p>
+                  <p className="mt-1 text-2xl font-bold text-amber-600">18</p>
+                </div>
+                <div className="rounded-lg bg-indigo-500/10 p-4">
+                  <p className="text-xs text-muted-foreground">Recycling Rate</p>
+                  <p className="mt-1 text-2xl font-bold text-indigo-600">71%</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <div className="flex gap-2">
-            <Link href="/login">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link href="/register">
-              <Button>Get Started</Button>
-            </Link>
+        </section>
+
+        <section id="solutions" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mb-8 flex items-end justify-between">
+            <h2 className="text-3xl font-bold tracking-tight">Built for Every Waste Workflow</h2>
+            <p className="max-w-sm text-right text-sm text-muted-foreground">From household pickups to municipal control rooms.</p>
           </div>
-        </div>
-      </header>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader>
+                <Leaf className="mb-2 h-10 w-10 text-emerald-600" />
+                <CardTitle>Citizen Requests</CardTitle>
+                <CardDescription>Residents can raise structured pickup tickets in seconds.</CardDescription>
+              </CardHeader>
+            </Card>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <h2 className="text-5xl font-bold mb-6 text-gray-900">
-          Smart Waste Management
-          <br />
-          <span className="text-green-600">Made Simple</span>
-        </h2>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Join GreenSync to efficiently manage waste collection, track your environmental impact, 
-          and contribute to a cleaner, greener future.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link href="/register">
-            <Button size="lg" className="text-lg">
-              Start Collecting
-            </Button>
-          </Link>
-          <Link href="/login">
-            <Button size="lg" variant="outline" className="text-lg">
-              Learn More
-            </Button>
-          </Link>
-        </div>
-      </section>
+            <Card>
+              <CardHeader>
+                <Route className="mb-2 h-10 w-10 text-cyan-600" />
+                <CardTitle>Route Efficiency</CardTitle>
+                <CardDescription>Operational teams can optimize routes and reduce idle time.</CardDescription>
+              </CardHeader>
+            </Card>
 
-      {/* Features Section */}
-      <section className="container mx-auto px-4 py-16">
-        <h3 className="text-3xl font-bold text-center mb-12">Why Choose GreenSync?</h3>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+            <Card>
+              <CardHeader>
+                <AreaChart className="mb-2 h-10 w-10 text-indigo-600" />
+                <CardTitle>Actionable Analytics</CardTitle>
+                <CardDescription>Charts and trends show what needs attention across zones.</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <ShieldCheck className="mb-2 h-10 w-10 text-amber-600" />
+                <CardTitle>Admin Governance</CardTitle>
+                <CardDescription>Role-based control keeps approvals and operations auditable.</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </section>
+
+        <section id="workflow" className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+          <Card className="overflow-hidden border-border/70 bg-card/90">
+            <CardContent className="grid gap-6 p-6 md:grid-cols-3 md:p-8">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Step 1</p>
+                <h3 className="mt-2 text-lg font-semibold">Raise Request</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Users submit pickup type, quantity, and location.</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Step 2</p>
+                <h3 className="mt-2 text-lg font-semibold">Dispatch Team</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Admins assign drivers and vehicles to approved requests.</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Step 3</p>
+                <h3 className="mt-2 text-lg font-semibold">Track Outcomes</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Completion status and performance metrics update in real-time.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section id="impact" className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+          <Card className="border-0 bg-gradient-to-br from-emerald-600 to-cyan-600 text-white shadow-xl">
             <CardHeader>
-              <Recycle className="h-12 w-12 text-green-600 mb-2" />
-              <CardTitle>Easy Requests</CardTitle>
-              <CardDescription>
-                Submit waste collection requests in seconds with our simple form
+              <CardTitle className="text-3xl">Scale Cleanliness Across the City</CardTitle>
+              <CardDescription className="text-emerald-50">
+                Deploy one shared platform for citizens, drivers, and administrators.
               </CardDescription>
             </CardHeader>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4">
+              <p className="max-w-xl text-sm text-emerald-50/90">
+                EcoLoop helps local bodies reduce delays, improve recycling rates, and maintain transparent service delivery.
+              </p>
+              <div className="flex gap-3">
+                <Link href="/register">
+                  <Button variant="secondary" size="lg">Get Started</Button>
+                </Link>
+                <Link href="/login">
+                  <Button variant="outline" size="lg" className="border-white/40 bg-transparent text-white hover:bg-white/10">
+                    Open Console
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader>
-              <Truck className="h-12 w-12 text-blue-600 mb-2" />
-              <CardTitle>Real-time Tracking</CardTitle>
-              <CardDescription>
-                Track your collection status and vehicle location in real-time
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <BarChart3 className="h-12 w-12 text-purple-600 mb-2" />
-              <CardTitle>Analytics Dashboard</CardTitle>
-              <CardDescription>
-                Monitor your waste management statistics and environmental impact
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <Leaf className="h-12 w-12 text-green-600 mb-2" />
-              <CardTitle>Eco-Friendly</CardTitle>
-              <CardDescription>
-                Proper waste segregation and recycling for a sustainable future
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
-        <Card className="max-w-2xl mx-auto bg-green-600 text-white">
-          <CardHeader>
-            <CardTitle className="text-3xl">Ready to Get Started?</CardTitle>
-            <CardDescription className="text-green-50 text-lg">
-              Join thousands of users making a difference in waste management
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/register">
-              <Button size="lg" variant="secondary" className="text-lg">
-                Create Free Account
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t bg-white/80 backdrop-blur-sm mt-20">
-        <div className="container mx-auto px-4 py-8 text-center text-gray-600">
-          <p>&copy; 2025 GreenSync. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-# GreenSync
+# EcoLoop
 
 **Complete Waste Management Platform**
 
@@ -13,9 +13,9 @@ A modern, full-stack waste management system built with Next.js 15, Supabase, Ty
 
 ## Overview
 
-GreenSync is a comprehensive waste management platform connecting users with waste collection services. Features include real-time tracking, role-based access control, collection management, and analytics dashboards.
+EcoLoop is a comprehensive waste management platform connecting users with waste collection services. Features include real-time tracking, role-based access control, collection management, and analytics dashboards.
 
-### Live Demo: [https://greensync-phi.vercel.app/]
+### Live Demo: [https://ecoloop-phi.vercel.app/]
 
 ## Key Features
 
@@ -63,8 +63,8 @@ GreenSync is a comprehensive waste management platform connecting users with was
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/greensync.git
-cd greensync
+git clone https://github.com/yourusername/ecoloop.git
+cd ecoloop
 
 # Install dependencies
 npm install
@@ -89,13 +89,13 @@ Visit `http://localhost:3000` to see the app.
 
 ### Admin Account
 ```
-Email: admin@greensync.com
+Email: admin@ecoloop.com
 Password: admin123
 ```
 
 ### Test User Account
 ```
-Email: user1@greensync.com
+Email: user1@ecoloop.com
 Password: 123user1
 ```
 
@@ -115,7 +115,7 @@ Password: 123user1
 ## Project Structure
 
 ```
-greensync/
+ecoloop/
 ├── app/
 │   ├── (auth)/              # Login, Register
 │   ├── dashboard/           # User Dashboard

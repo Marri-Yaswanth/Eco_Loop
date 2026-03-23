@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { BrandLogo } from '@/components/brand-logo'
+import { ThemeToggle } from '@/components/theme-toggle'
 import Link from 'next/link'
 import { Plus, Package, Clock, CheckCircle, Trash2, MapPin } from 'lucide-react'
 
@@ -143,17 +145,18 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <Package className="h-8 w-8 text-green-600" />
+              <BrandLogo compact />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">GreenSync</h1>
-                <p className="text-sm text-gray-600">Welcome, {profile.name}!</p>
+                <h1 className="text-2xl font-bold text-foreground">EcoLoop</h1>
+                <p className="text-sm text-muted-foreground">Welcome, {profile.name}!</p>
               </div>
             </div>
             <div className="flex gap-2">
+              <ThemeToggle />
               <Link href="/collections/new">
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />

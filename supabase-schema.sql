@@ -1,4 +1,4 @@
--- GreenSync Database Schema for Supabase
+-- EcoLoop Database Schema for Supabase
 -- Run this in Supabase SQL Editor
 
 -- Enable UUID extension
@@ -132,6 +132,9 @@ ALTER TABLE segregations ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for Profiles
 CREATE POLICY "Users can view own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can update own profile" ON profiles
   FOR UPDATE USING (auth.uid() = id);
@@ -298,5 +301,5 @@ INSERT INTO waste_categories (name, description, color, icon) VALUES
   ('General', 'Non-recyclable, non-hazardous waste', '#6b7280', 'trash-2');
 
 -- Insert sample admin user (you'll need to create this user in Supabase Auth first)
--- After creating admin@greensync.com in Supabase Auth, run:
+-- After creating admin@ecoloop.com in Supabase Auth, run:
 -- INSERT INTO profiles (id, name, role) VALUES ('USER_ID_FROM_AUTH', 'Admin User', 'admin');
