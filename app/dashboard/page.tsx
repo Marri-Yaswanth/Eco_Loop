@@ -64,6 +64,22 @@ export default function UserDashboard() {
         return
       }
 
+      if (profileData.role === 'driver') {
+        router.push('/driver/dashboard')
+        return
+      }
+
+      const { data: driverProfile } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (driverProfile) {
+        router.push('/driver/dashboard')
+        return
+      }
+
       setProfile(profileData)
       await loadDashboardData(user.id)
     } catch (error) {

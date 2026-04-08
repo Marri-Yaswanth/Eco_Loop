@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'driver', 'admin')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -56,6 +56,7 @@ CREATE TABLE vehicles (
 -- Drivers (must be created before collections)
 CREATE TABLE drivers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID UNIQUE REFERENCES profiles(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   phone TEXT NOT NULL,
   license_number TEXT UNIQUE NOT NULL,
@@ -214,6 +215,38 @@ CREATE POLICY "Admins can manage drivers" ON drivers
 CREATE POLICY "Users can view drivers" ON drivers
   FOR SELECT USING (true);
 
+CREATE POLICY "Drivers can view own profile" ON drivers
+  FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Drivers can update own status" ON drivers
+  FOR UPDATE USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Drivers can view assigned collections" ON collections
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM drivers
+      WHERE drivers.id = collections.driver_id
+      AND drivers.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Drivers can update assigned collections" ON collections
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM drivers
+      WHERE drivers.id = collections.driver_id
+      AND drivers.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM drivers
+      WHERE drivers.id = collections.driver_id
+      AND drivers.user_id = auth.uid()
+    )
+  );
+
 -- RLS Policies for Transportation
 CREATE POLICY "Users can view own transportation" ON transportations
   FOR SELECT USING (
@@ -229,6 +262,31 @@ CREATE POLICY "Admins can manage transportation" ON transportations
     EXISTS (
       SELECT 1 FROM profiles 
       WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Drivers can view assigned transportation" ON transportations
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM drivers
+      WHERE drivers.id = transportations.driver_id
+      AND drivers.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Drivers can update assigned transportation" ON transportations
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM drivers
+      WHERE drivers.id = transportations.driver_id
+      AND drivers.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM drivers
+      WHERE drivers.id = transportations.driver_id
+      AND drivers.user_id = auth.uid()
     )
   );
 
@@ -303,3 +361,16 @@ INSERT INTO waste_categories (name, description, color, icon) VALUES
 -- Insert sample admin user (you'll need to create this user in Supabase Auth first)
 -- After creating admin@ecoloop.com in Supabase Auth, run:
 -- INSERT INTO profiles (id, name, role) VALUES ('USER_ID_FROM_AUTH', 'Admin User', 'admin');
+
+-- Link a driver row to an authenticated account (run this after creating the driver user in Auth)
+-- UPDATE drivers
+-- SET user_id = 'DRIVER_PROFILE_USER_ID'
+-- WHERE id = 'DRIVER_ROW_ID';
+
+-- For existing databases: allow 'driver' role and set a driver account role
+-- ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+-- ALTER TABLE profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('user', 'driver', 'admin'));
+-- UPDATE profiles p
+-- SET role = 'driver'
+-- FROM auth.users u
+-- WHERE p.id = u.id AND lower(u.email) = 'driver1@ecoloop.com';

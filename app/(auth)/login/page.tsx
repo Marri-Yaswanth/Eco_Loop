@@ -82,12 +82,28 @@ function LoginForm() {
       // Small delay to ensure session is set
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      // Redirect based on role
+      // Redirect based on role (admin > driver > user)
       const redirect = searchParams.get('redirect')
       if (redirect) {
         window.location.href = redirect
       } else {
-        window.location.href = profile?.role === 'admin' ? '/admin/dashboard' : '/dashboard'
+        if (profile?.role === 'admin') {
+          window.location.href = '/admin/dashboard'
+          return
+        }
+
+        if (profile?.role === 'driver') {
+          window.location.href = '/driver/dashboard'
+          return
+        }
+
+        const { data: driverProfile } = await supabase
+          .from('drivers')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .maybeSingle()
+
+        window.location.href = driverProfile ? '/driver/dashboard' : '/dashboard'
       }
     } catch (error) {
       toast({
