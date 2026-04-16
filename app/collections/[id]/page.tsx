@@ -6,9 +6,20 @@ import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-import { ArrowLeft, Package, Clock, MapPin, AlertCircle, Trash2 } from 'lucide-react'
+import { ArrowLeft, Package, Clock, MapPin, AlertCircle, Trash2, Star } from 'lucide-react'
+
+interface CollectionFeedback {
+  id: string
+  pickup_rating: number
+  driver_behavior_rating: number
+  feedback?: string | null
+  created_at: string
+  updated_at: string
+}
 
 interface WasteRequest {
   id: string
@@ -30,6 +41,7 @@ interface WasteRequest {
     completion_time?: string
     vehicles?: { vehicle_number: string; vehicle_type: string }
     drivers?: { name: string; phone: string }
+    feedback?: CollectionFeedback | null
   }>
 }
 
@@ -40,6 +52,10 @@ export default function RequestDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [request, setRequest] = useState<WasteRequest | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [submittingFeedback, setSubmittingFeedback] = useState(false)
+  const [pickupRating, setPickupRating] = useState(0)
+  const [driverBehaviorRating, setDriverBehaviorRating] = useState(0)
+  const [feedbackText, setFeedbackText] = useState('')
 
   useEffect(() => {
     loadRequest()
@@ -90,9 +106,38 @@ export default function RequestDetailsPage() {
           console.error('Error fetching collection:', collectionError)
         }
 
+        let feedback: CollectionFeedback | null = null
+
+        if (collectionData) {
+          const { data: feedbackData, error: feedbackError } = await supabase
+            .from('collection_feedback')
+            .select('*')
+            .eq('collection_id', collectionData.id)
+            .maybeSingle()
+
+          if (feedbackError) {
+            console.error('Error fetching feedback:', feedbackError)
+          }
+
+          feedback = feedbackData
+          if (feedbackData) {
+            setPickupRating(feedbackData.pickup_rating)
+            setDriverBehaviorRating(feedbackData.driver_behavior_rating)
+            setFeedbackText(feedbackData.feedback || '')
+          } else {
+            setPickupRating(0)
+            setDriverBehaviorRating(0)
+            setFeedbackText('')
+          }
+        } else {
+          setPickupRating(0)
+          setDriverBehaviorRating(0)
+          setFeedbackText('')
+        }
+
         setRequest({
           ...data,
-          collections: collectionData ? [collectionData] : []
+          collections: collectionData ? [{ ...collectionData, feedback }] : []
         })
       } else {
         setRequest(data)
@@ -142,6 +187,59 @@ export default function RequestDetailsPage() {
     }
   }
 
+  async function handleSubmitFeedback() {
+    if (!request?.collections?.[0]) return
+
+    if (pickupRating < 1 || driverBehaviorRating < 1) {
+      toast({
+        title: 'Missing ratings',
+        description: 'Please rate both the pickup experience and driver behavior.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setSubmittingFeedback(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      const { error } = await supabase
+        .from('collection_feedback')
+        .upsert(
+          {
+            collection_id: request.collections[0].id,
+            user_id: user.id,
+            pickup_rating: pickupRating,
+            driver_behavior_rating: driverBehaviorRating,
+            feedback: feedbackText.trim() || null,
+          },
+          { onConflict: 'collection_id' }
+        )
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Your feedback has been saved.',
+      })
+
+      await loadRequest()
+    } catch (error) {
+      console.error('Error saving feedback:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to save your feedback',
+        variant: 'destructive',
+      })
+    } finally {
+      setSubmittingFeedback(false)
+    }
+  }
+
   function getStatusColor(status: string) {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
@@ -174,6 +272,33 @@ export default function RequestDetailsPage() {
   }
 
   const canCancel = request.status === 'pending'
+  const canLeaveFeedback = request.collections?.[0]?.status === 'completed'
+
+  function renderRating(label: string, value: number, onChange: (rating: number) => void) {
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: 5 }, (_, index) => {
+            const rating = index + 1
+            const active = rating <= value
+
+            return (
+              <button
+                key={rating}
+                type="button"
+                onClick={() => onChange(rating)}
+                className="rounded-md p-1 transition-colors hover:bg-accent"
+                aria-label={`${label} ${rating} star${rating > 1 ? 's' : ''}`}
+              >
+                <Star className={`h-6 w-6 ${active ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} />
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -449,6 +574,70 @@ export default function RequestDetailsPage() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {canLeaveFeedback && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Share Your Feedback</CardTitle>
+                <CardDescription>Rate the pickup experience and driver behavior</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {request.collections?.[0]?.feedback ? (
+                  <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Pickup Experience</p>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <Star
+                              key={index + 1}
+                              className={`h-5 w-5 ${index < request.collections![0].feedback!.pickup_rating ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Driver Behavior</p>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <Star
+                              key={index + 1}
+                              className={`h-5 w-5 ${index < request.collections![0].feedback!.driver_behavior_rating ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {request.collections[0].feedback.feedback && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Comment</p>
+                        <p className="text-sm text-foreground">{request.collections[0].feedback.feedback}</p>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">Your feedback has been saved. You can update it if needed.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {renderRating('Pickup experience', pickupRating, setPickupRating)}
+                    {renderRating('Driver behavior', driverBehaviorRating, setDriverBehaviorRating)}
+                    <div className="space-y-2">
+                      <Label htmlFor="feedback">Additional feedback</Label>
+                      <Textarea
+                        id="feedback"
+                        placeholder="Tell us how the pickup went and anything the driver did well or could improve."
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                        rows={4}
+                      />
+                    </div>
+                    <Button onClick={handleSubmitFeedback} disabled={submittingFeedback} className="gap-2">
+                      {submittingFeedback ? 'Saving...' : 'Submit Feedback'}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

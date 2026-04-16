@@ -10,7 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-import { ArrowLeft, Package, Clock, MapPin, User, CheckCircle, XCircle, Truck, Users } from 'lucide-react'
+import { ArrowLeft, Package, Clock, MapPin, User, CheckCircle, XCircle, Truck, Users, Star } from 'lucide-react'
+
+interface CollectionFeedback {
+  pickup_rating: number
+  driver_behavior_rating: number
+  feedback?: string | null
+  created_at: string
+}
 
 interface WasteRequest {
   id: string
@@ -33,6 +40,7 @@ interface WasteRequest {
     completion_time?: string
     vehicles?: { vehicle_number: string; vehicle_type: string; status: string }
     drivers?: { name: string; phone: string; status: string }
+    feedback?: CollectionFeedback | null
   }>
 }
 
@@ -108,7 +116,28 @@ export default function AdminRequestDetailsPage() {
 
       if (error) throw error
 
-      setRequest(data)
+      let collectionFeedback: CollectionFeedback | null = null
+      if (data?.collections && data.collections.length > 0) {
+        const { data: feedbackData, error: feedbackError } = await supabase
+          .from('collection_feedback')
+          .select('*')
+          .eq('collection_id', data.collections[0].id)
+          .maybeSingle()
+
+        if (feedbackError) {
+          console.error('Error loading feedback:', feedbackError)
+        }
+
+        collectionFeedback = feedbackData
+      }
+
+      setRequest({
+        ...data,
+        collections: data.collections?.map((collection: any) => ({
+          ...collection,
+          feedback: collectionFeedback,
+        })),
+      })
     } catch (error) {
       console.error('Error loading request:', error)
       toast({
@@ -269,6 +298,19 @@ export default function AdminRequestDetailsPage() {
     }
   }
 
+  function renderStars(value: number) {
+    return (
+      <div className="flex items-center gap-1">
+        {Array.from({ length: 5 }, (_, index) => (
+          <Star
+            key={index + 1}
+            className={`h-5 w-5 ${index < value ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`}
+          />
+        ))}
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -415,6 +457,33 @@ export default function AdminRequestDetailsPage() {
                     Reject Request
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {request.collections && request.collections.length > 0 && request.collections[0]?.feedback && (
+            <Card>
+              <CardHeader>
+                <CardTitle>User Feedback</CardTitle>
+                <CardDescription>Ratings submitted after the waste pickup</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2">Pickup Experience</p>
+                    {renderStars(request.collections[0].feedback!.pickup_rating)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2">Driver Behavior</p>
+                    {renderStars(request.collections[0].feedback!.driver_behavior_rating)}
+                  </div>
+                </div>
+                {request.collections[0].feedback?.feedback && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Comment</p>
+                    <p className="text-gray-900">{request.collections[0].feedback.feedback}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

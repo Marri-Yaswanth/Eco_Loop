@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { createSupabaseFetch, getSupabaseConfig } from './config'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig()
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
@@ -10,9 +10,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // For client components
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: createSupabaseFetch(supabaseUrl),
+  },
+})
 
 // For server components and API routes
 export const createSupabaseClient = () => {
-  return createClient(supabaseUrl, supabaseAnonKey)
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      fetch: createSupabaseFetch(supabaseUrl),
+    },
+  })
 }

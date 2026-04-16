@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { createSupabaseFetch, getSupabaseConfig } from './config'
 
 export const createServerSupabaseClient = async () => {
   const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig()
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn(
@@ -17,6 +17,7 @@ export const createServerSupabaseClient = async () => {
       persistSession: false,
     },
     global: {
+      fetch: createSupabaseFetch(supabaseUrl),
       headers: {
         cookie: cookieStore.toString(),
       },

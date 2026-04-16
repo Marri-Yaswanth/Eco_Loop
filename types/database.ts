@@ -115,3 +115,14 @@ export interface Segregation {
   notes?: string
   created_at: string
 }
+
+export interface CollectionFeedback {
+  id: string
+  collection_id: string
+  user_id: string
+  pickup_rating: number
+  driver_behavior_rating: number
+  feedback?: string | null
+  created_at: string
+  updated_at: string
+}

@@ -119,6 +119,18 @@ CREATE TABLE segregations (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Collection Feedback
+CREATE TABLE collection_feedback (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  collection_id UUID UNIQUE REFERENCES collections(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  pickup_rating INT NOT NULL CHECK (pickup_rating BETWEEN 1 AND 5),
+  driver_behavior_rating INT NOT NULL CHECK (driver_behavior_rating BETWEEN 1 AND 5),
+  feedback TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_addresses ENABLE ROW LEVEL SECURITY;
@@ -129,6 +141,7 @@ ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transportations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE waste_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE segregations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collection_feedback ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for Profiles
 CREATE POLICY "Users can view own profile" ON profiles
@@ -247,6 +260,36 @@ CREATE POLICY "Drivers can update assigned collections" ON collections
     )
   );
 
+-- RLS Policies for Collection Feedback
+CREATE POLICY "Users can view own feedback" ON collection_feedback
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own feedback" ON collection_feedback
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own feedback" ON collection_feedback
+  FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage feedback" ON collection_feedback
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Drivers can view feedback for assigned collections" ON collection_feedback
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1
+      FROM collections
+      JOIN drivers ON drivers.id = collections.driver_id
+      WHERE collections.id = collection_feedback.collection_id
+        AND drivers.user_id = auth.uid()
+    )
+  );
+
 -- RLS Policies for Transportation
 CREATE POLICY "Users can view own transportation" ON transportations
   FOR SELECT USING (
@@ -342,6 +385,9 @@ CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_waste_requests_updated_at BEFORE UPDATE ON waste_requests
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_collection_feedback_updated_at BEFORE UPDATE ON collection_feedback
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_collections_updated_at BEFORE UPDATE ON collections
