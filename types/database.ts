@@ -35,6 +35,7 @@ export interface WasteRequest {
   status: WasteRequestStatus
   priority: WasteRequestPriority
   special_instructions?: string
+  rejection_reason?: string | null
   created_at: string
   updated_at: string
 }

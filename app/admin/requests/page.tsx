@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { ArrowLeft, Package, Search, Filter, CheckCircle, XCircle } from 'lucide-react'
@@ -20,6 +29,7 @@ interface WasteRequest {
   address: string
   status: string
   priority: string
+  rejection_reason?: string | null
   created_at: string
   profiles: { name: string } | null
 }
@@ -32,6 +42,10 @@ export default function AdminRequestsPage() {
   const [filteredRequests, setFilteredRequests] = useState<WasteRequest[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [requestIdToReject, setRequestIdToReject] = useState<string | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [rejecting, setRejecting] = useState(false)
 
   useEffect(() => {
     checkAuthAndLoadData()
@@ -100,7 +114,7 @@ export default function AdminRequestsPage() {
     try {
       const { error } = await supabase
         .from('waste_requests')
-        .update({ status: 'approved' })
+        .update({ status: 'approved', rejection_reason: null })
         .eq('id', requestId)
 
       if (error) throw error
@@ -121,24 +135,44 @@ export default function AdminRequestsPage() {
     }
   }
 
-  async function handleReject(requestId: string) {
-    if (!confirm('Are you sure you want to reject this request?')) {
+  function openRejectDialog(requestId: string) {
+    setRequestIdToReject(requestId)
+    setRejectionReason('')
+    setRejectDialogOpen(true)
+  }
+
+  async function handleReject() {
+    const reason = rejectionReason.trim()
+    if (!requestIdToReject) {
       return
     }
 
+    if (!reason) {
+      toast({
+        title: 'Reason required',
+        description: 'Please enter a rejection reason for the user.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setRejecting(true)
     try {
       const { error } = await supabase
         .from('waste_requests')
-        .update({ status: 'rejected' })
-        .eq('id', requestId)
+        .update({ status: 'rejected', rejection_reason: reason })
+        .eq('id', requestIdToReject)
 
       if (error) throw error
 
       toast({
         title: 'Success',
-        description: 'Request rejected',
+        description: 'Request rejected with feedback',
       })
 
+      setRejectDialogOpen(false)
+      setRequestIdToReject(null)
+      setRejectionReason('')
       await loadRequests()
     } catch (error) {
       console.error('Error rejecting request:', error)
@@ -147,6 +181,8 @@ export default function AdminRequestsPage() {
         description: 'Failed to reject request',
         variant: 'destructive',
       })
+    } finally {
+      setRejecting(false)
     }
   }
 
@@ -277,6 +313,12 @@ export default function AdminRequestsPage() {
                       <p className="text-sm text-gray-600">
                         <strong>Address:</strong> {request.address}
                       </p>
+
+                      {request.status === 'rejected' && request.rejection_reason && (
+                        <p className="text-sm text-red-700 mt-2">
+                          <strong>Feedback:</strong> {request.rejection_reason}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex gap-2 ml-4">
@@ -293,7 +335,7 @@ export default function AdminRequestsPage() {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleReject(request.id)}
+                            onClick={() => openRejectDialog(request.id)}
                             className="gap-1"
                           >
                             <XCircle className="h-4 w-4" />
@@ -314,6 +356,44 @@ export default function AdminRequestsPage() {
           </div>
         )}
       </main>
+
+      <Dialog
+        open={rejectDialogOpen}
+        onOpenChange={(open) => {
+          setRejectDialogOpen(open)
+          if (!open) {
+            setRequestIdToReject(null)
+            setRejectionReason('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Request</DialogTitle>
+            <DialogDescription>
+              Write feedback so the user understands why this collection request was rejected.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Example: The selected pickup date is unavailable. Please choose another date."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={4}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)} disabled={rejecting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
+              {rejecting ? 'Rejecting...' : 'Reject Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

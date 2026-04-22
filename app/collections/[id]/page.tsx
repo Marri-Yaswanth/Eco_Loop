@@ -32,6 +32,7 @@ interface WasteRequest {
   priority: string
   description?: string
   special_instructions?: string
+  rejection_reason?: string | null
   created_at: string
   updated_at: string
   collections?: Array<{
@@ -396,6 +397,16 @@ export default function RequestDetailsPage() {
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-500 mb-1">Special Instructions</p>
                     <p className="text-gray-900">{request.special_instructions}</p>
+                  </div>
+                </div>
+              )}
+
+              {request.status === 'rejected' && request.rejection_reason && (
+                <div className="flex items-start gap-3 pt-4 border-t">
+                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-700 mb-1">Why this request was rejected</p>
+                    <p className="text-red-700">{request.rejection_reason}</p>
                   </div>
                 </div>
               )}

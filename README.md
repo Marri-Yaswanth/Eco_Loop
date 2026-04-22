@@ -15,7 +15,7 @@ A modern, full-stack waste management system built with Next.js 15, Supabase, Ty
 
 EcoLoop is a comprehensive waste management platform connecting users with waste collection services. Features include real-time tracking, role-based access control, collection management, and analytics dashboards.
 
-### Live Demo: [https://ecoloop-phi.vercel.app/]
+### Live Demo: [https://eco-loop-ky34lr3t8-yaswanths-projects-94e617d9.vercel.app/]
 
 ## Key Features
 

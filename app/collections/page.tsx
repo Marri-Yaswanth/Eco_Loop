@@ -22,6 +22,7 @@ interface WasteRequest {
   priority: string
   created_at: string
   description?: string
+  rejection_reason?: string | null
 }
 
 export default function CollectionsPage() {
@@ -237,6 +238,12 @@ export default function CollectionsPage() {
                       {request.description && (
                         <p className="text-sm text-gray-600">
                           <strong>Description:</strong> {request.description}
+                        </p>
+                      )}
+
+                      {request.status === 'rejected' && request.rejection_reason && (
+                        <p className="text-sm text-red-700 mt-2">
+                          <strong>Admin Feedback:</strong> {request.rejection_reason}
                         </p>
                       )}
 

@@ -3,14 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { updateWasteRequest, updateVehicle, updateDriver, insertCollection, getProfileRole } from '@/lib/supabase/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-import { ArrowLeft, Package, Clock, MapPin, User, CheckCircle, XCircle, Truck, Users, Star } from 'lucide-react'
+import { ArrowLeft, Package, Clock, MapPin, User, CheckCircle, XCircle, Truck, Users, Star, AlertCircle } from 'lucide-react'
 
 interface CollectionFeedback {
   pickup_rating: number
@@ -31,6 +33,7 @@ interface WasteRequest {
   priority: string
   description?: string
   special_instructions?: string
+  rejection_reason?: string | null
   created_at: string
   profiles: { name: string; id: string } | null
   collections?: Array<{
@@ -61,6 +64,7 @@ interface Driver {
 export default function AdminRequestDetailsPage() {
   const router = useRouter()
   const params = useParams()
+  const requestId = Array.isArray(params.id) ? params.id[0] : params.id
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [request, setRequest] = useState<WasteRequest | null>(null)
@@ -69,10 +73,50 @@ export default function AdminRequestDetailsPage() {
   const [selectedVehicle, setSelectedVehicle] = useState('')
   const [selectedDriver, setSelectedDriver] = useState('')
   const [assigning, setAssigning] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [rejecting, setRejecting] = useState(false)
 
   useEffect(() => {
     checkAuthAndLoadData()
   }, [])
+
+  function extractErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message) {
+      return error.message
+    }
+
+    if (typeof error === 'object' && error !== null) {
+      const candidate = error as {
+        message?: unknown
+        details?: unknown
+        hint?: unknown
+        code?: unknown
+      }
+
+      const parts = [candidate.message, candidate.details, candidate.hint, candidate.code]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+
+      if (parts.length > 0) {
+        return parts.join(' | ')
+      }
+
+      try {
+        return JSON.stringify(error)
+      } catch {
+        return 'Unknown error'
+      }
+    }
+
+    return 'Unknown error'
+  }
+
+  function isMissingRejectionReasonColumnError(error: unknown): boolean {
+    const message = extractErrorMessage(error).toLowerCase()
+    return (
+      message.includes('rejection_reason') &&
+      (message.includes('schema cache') || message.includes('pgrst204') || message.includes('column'))
+    )
+  }
 
   async function checkAuthAndLoadData() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -81,13 +125,9 @@ export default function AdminRequestDetailsPage() {
       return
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const { data: profile } = await getProfileRole(user.id)
 
-    if (profile?.role !== 'admin') {
+    if ((profile as { role: string } | null)?.role !== 'admin') {
       router.push('/dashboard')
       return
     }
@@ -97,6 +137,10 @@ export default function AdminRequestDetailsPage() {
 
   async function loadRequest() {
     try {
+      if (!requestId) {
+        throw new Error('Invalid request id')
+      }
+
       const { data, error } = await supabase
         .from('waste_requests')
         .select(`
@@ -111,17 +155,18 @@ export default function AdminRequestDetailsPage() {
             drivers (name, phone, status)
           )
         `)
-        .eq('id', params.id)
+        .eq('id', requestId)
         .single()
 
       if (error) throw error
 
       let collectionFeedback: CollectionFeedback | null = null
-      if (data?.collections && data.collections.length > 0) {
+      const typedData = data as any
+      if (typedData?.collections && typedData.collections.length > 0) {
         const { data: feedbackData, error: feedbackError } = await supabase
           .from('collection_feedback')
           .select('*')
-          .eq('collection_id', data.collections[0].id)
+          .eq('collection_id', typedData.collections[0].id)
           .maybeSingle()
 
         if (feedbackError) {
@@ -132,8 +177,8 @@ export default function AdminRequestDetailsPage() {
       }
 
       setRequest({
-        ...data,
-        collections: data.collections?.map((collection: any) => ({
+        ...typedData,
+        collections: typedData?.collections?.map((collection: any) => ({
           ...collection,
           feedback: collectionFeedback,
         })),
@@ -172,13 +217,32 @@ export default function AdminRequestDetailsPage() {
   }
 
   async function handleApprove() {
-    try {
-      const { error } = await supabase
-        .from('waste_requests')
-        .update({ status: 'approved' })
-        .eq('id', request?.id)
+    if (!request?.id) {
+      toast({
+        title: 'Error',
+        description: 'Request ID is missing. Please refresh and try again.',
+        variant: 'destructive',
+      })
+      return
+    }
 
-      if (error) throw error
+    try {
+      const { error } = await updateWasteRequest(request.id, {
+        status: 'approved',
+        rejection_reason: null,
+      })
+
+      if (error) {
+        if (!isMissingRejectionReasonColumnError(error)) {
+          throw error
+        }
+
+        const { error: fallbackError } = await updateWasteRequest(request.id, {
+          status: 'approved',
+        })
+
+        if (fallbackError) throw fallbackError
+      }
 
       toast({
         title: 'Success',
@@ -187,41 +251,81 @@ export default function AdminRequestDetailsPage() {
 
       await loadRequest()
     } catch (error) {
-      console.error('Error approving request:', error)
+      const message = extractErrorMessage(error)
+      console.error('Error approving request:', message, error)
       toast({
         title: 'Error',
-        description: 'Failed to approve request',
+        description: `Failed to approve request: ${message}`,
         variant: 'destructive',
       })
     }
   }
 
   async function handleReject() {
-    if (!confirm('Are you sure you want to reject this request?')) {
+    if (!request?.id) {
+      toast({
+        title: 'Error',
+        description: 'Request ID is missing. Please refresh and try again.',
+        variant: 'destructive',
+      })
       return
     }
 
-    try {
-      const { error } = await supabase
-        .from('waste_requests')
-        .update({ status: 'rejected' })
-        .eq('id', request?.id)
-
-      if (error) throw error
-
+    const reason = rejectionReason.trim()
+    if (!reason) {
       toast({
-        title: 'Success',
-        description: 'Request rejected',
+        title: 'Reason required',
+        description: 'Please provide why this request is being rejected.',
+        variant: 'destructive',
       })
+      return
+    }
+
+    setRejecting(true)
+    try {
+      let usedFallback = false
+      const { error } = await updateWasteRequest(request.id, {
+        status: 'rejected',
+        rejection_reason: reason,
+      })
+
+      if (error) {
+        if (!isMissingRejectionReasonColumnError(error)) {
+          throw error
+        }
+
+        const { error: fallbackError } = await updateWasteRequest(request.id, {
+          status: 'rejected',
+        })
+
+        if (fallbackError) throw fallbackError
+        usedFallback = true
+
+        toast({
+          title: 'Rejected, but reason not saved',
+          description: 'Your database is missing rejection_reason column. Run the schema migration to store feedback.',
+          variant: 'destructive',
+        })
+      }
+
+      if (!usedFallback) {
+        toast({
+          title: 'Success',
+          description: 'Request rejected',
+        })
+      }
 
       router.push('/admin/requests')
     } catch (error) {
-      console.error('Error rejecting request:', error)
+      const message = extractErrorMessage(error)
+      console.error('Error rejecting request:', message, error)
       toast({
         title: 'Error',
-        description: 'Failed to reject request',
+        description: `Failed to reject request: ${message}`,
         variant: 'destructive',
       })
+    } finally {
+      setRejecting(false)
     }
   }
 
@@ -235,29 +339,36 @@ export default function AdminRequestDetailsPage() {
       return
     }
 
+    if (!request?.id || !request?.user_id) {
+      toast({
+        title: 'Error',
+        description: 'Request data is missing. Please refresh and try again.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setAssigning(true)
     try {
       const collectionData = {
-        waste_request_id: request?.id,
-        user_id: request?.user_id,
+        waste_request_id: request.id,
+        user_id: request.user_id,
         vehicle_id: selectedVehicle,
         driver_id: selectedDriver,
-        status: 'scheduled',
-        pickup_date: request?.pickup_date,
-        pickup_time: request?.pickup_time,
+        status: 'scheduled' as const,
+        pickup_date: request.pickup_date,
+        pickup_time: request.pickup_time,
       }
 
       // Create collection
-      const { error: collectionError } = await supabase
-        .from('collections')
-        .insert(collectionData)
+      const { error: collectionError } = await insertCollection(collectionData)
 
       if (collectionError) throw collectionError
 
       // Update vehicle and driver status
       await Promise.all([
-        supabase.from('vehicles').update({ status: 'in_use' }).eq('id', selectedVehicle),
-        supabase.from('drivers').update({ status: 'on_duty' }).eq('id', selectedDriver),
+        updateVehicle(selectedVehicle, { status: 'in_use' }),
+        updateDriver(selectedDriver, { status: 'on_duty' }),
       ])
 
       toast({
@@ -436,6 +547,16 @@ export default function AdminRequestDetailsPage() {
                   </div>
                 </div>
               )}
+
+              {request.status === 'rejected' && request.rejection_reason && (
+                <div className="flex items-start gap-3 pt-4 border-t">
+                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-700 mb-1">Rejection Feedback</p>
+                    <p className="text-red-700">{request.rejection_reason}</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -446,15 +567,29 @@ export default function AdminRequestDetailsPage() {
                 <CardTitle>Review Request</CardTitle>
                 <CardDescription>Approve or reject this collection request</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="space-y-2 rounded-md border border-red-200 bg-red-50/40 p-3">
+                  <Label htmlFor="rejectionReason" className="text-red-800 font-medium">
+                    Rejection Reason *
+                  </Label>
+                  <Textarea
+                    id="rejectionReason"
+                    className="min-h-[110px] border-red-200 bg-white"
+                    placeholder="Write why this request is being rejected. This feedback will be shown to the user."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={4}
+                  />
+                  <p className="text-xs text-red-700">Required to reject this request.</p>
+                </div>
                 <div className="flex gap-4">
                   <Button onClick={handleApprove} className="flex-1 gap-2">
                     <CheckCircle className="h-4 w-4" />
                     Approve Request
                   </Button>
-                  <Button onClick={handleReject} variant="destructive" className="flex-1 gap-2">
+                  <Button onClick={handleReject} variant="destructive" className="flex-1 gap-2" disabled={rejecting}>
                     <XCircle className="h-4 w-4" />
-                    Reject Request
+                    {rejecting ? 'Rejecting...' : 'Reject Request'}
                   </Button>
                 </div>
               </CardContent>
@@ -638,7 +773,10 @@ export default function AdminRequestDetailsPage() {
           {request.status === 'rejected' && (
             <Card className="border-red-200 bg-red-50">
               <CardContent className="pt-6">
-                <p className="text-center text-red-800">This request has been rejected</p>
+                <p className="text-center text-red-800 font-medium">This request has been rejected</p>
+                {request.rejection_reason && (
+                  <p className="text-center text-red-700 mt-2">Reason: {request.rejection_reason}</p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -652,6 +790,7 @@ export default function AdminRequestDetailsPage() {
           )}
         </div>
       </main>
+
     </div>
   )
 }
