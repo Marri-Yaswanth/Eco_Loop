@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { getProfileRole } from '@/lib/supabase/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -63,23 +64,19 @@ export default function AdminDashboard() {
         return
       }
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      const { data: profileData } = await getProfileRole(user.id)
 
       if (!profileData) {
         router.push('/login')
         return
       }
 
-      if (profileData.role !== 'admin') {
+      if ((profileData as { role: string }).role !== 'admin') {
         router.push('/dashboard')
         return
       }
 
-      setProfile(profileData)
+      setProfile(profileData as any)
       await loadDashboardData()
     } catch (error) {
       console.error('Auth error:', error)

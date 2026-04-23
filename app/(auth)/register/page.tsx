@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
+import { upsertProfile } from '@/lib/supabase/queries'
 
 export const dynamic = 'force-dynamic'
 import { Button } from '@/components/ui/button'
@@ -115,13 +116,11 @@ export default function RegisterPage() {
       // Create profile immediately only when a session exists.
       // If email confirmation is enabled, profile is created on first successful login.
       if (data.user && data.session) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            name: formData.name,
-            role: 'user',
-          }, { onConflict: 'id' })
+        const { error: profileError } = await upsertProfile({
+          id: data.user.id,
+          name: formData.name,
+          role: 'user',
+        })
 
         if (profileError) throw profileError
       }

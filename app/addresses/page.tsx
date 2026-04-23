@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { updateUserAddress, insertUserAddress, deleteUserAddress } from '@/lib/supabase/queries'
+import type { Database } from '@/types/supabase'
+
+type Tables = Database['public']['Tables']
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -103,10 +107,7 @@ export default function AddressesPage() {
     try {
       if (editingAddress) {
         // Update existing address
-        const { error } = await supabase
-          .from('user_addresses')
-          .update(formData)
-          .eq('id', editingAddress.id)
+        const { error } = await updateUserAddress(editingAddress.id, formData)
 
         if (error) throw error
 
@@ -116,13 +117,11 @@ export default function AddressesPage() {
         })
       } else {
         // Create new address
-        const { error } = await supabase
-          .from('user_addresses')
-          .insert({
-            ...formData,
-            user_id: userId,
-            is_default: addresses.length === 0, // First address is default
-          })
+        const { error } = await insertUserAddress({
+          ...formData,
+          user_id: userId,
+          is_default: addresses.length === 0, // First address is default
+        } as Tables['user_addresses']['Insert'])
 
         if (error) throw error
 
@@ -147,16 +146,10 @@ export default function AddressesPage() {
   async function handleSetDefault(addressId: string) {
     try {
       // Remove default from all addresses
-      await supabase
-        .from('user_addresses')
-        .update({ is_default: false })
-        .eq('user_id', userId)
+      await updateUserAddress(addressId, { is_default: false })
 
       // Set new default
-      const { error } = await supabase
-        .from('user_addresses')
-        .update({ is_default: true })
-        .eq('id', addressId)
+      const { error } = await updateUserAddress(addressId, { is_default: true })
 
       if (error) throw error
 
@@ -182,10 +175,7 @@ export default function AddressesPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('user_addresses')
-        .delete()
-        .eq('id', addressId)
+      const { error } = await deleteUserAddress(addressId)
 
       if (error) throw error
 

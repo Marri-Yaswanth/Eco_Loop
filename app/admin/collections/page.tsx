@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { getProfileRole, updateCollection } from '@/lib/supabase/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -54,13 +55,9 @@ export default function AdminCollectionsPage() {
       return
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const { data: profile } = await getProfileRole(user.id)
 
-    if (profile?.role !== 'admin') {
+    if ((profile as { role: string } | null)?.role !== 'admin') {
       router.push('/dashboard')
       return
     }
@@ -101,10 +98,7 @@ export default function AdminCollectionsPage() {
         updates.completion_time = new Date().toISOString()
       }
 
-      const { error } = await supabase
-        .from('collections')
-        .update(updates)
-        .eq('id', collectionId)
+      const { error } = await updateCollection(collectionId, updates)
 
       if (error) throw error
 

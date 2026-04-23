@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { getProfileRole, updateWasteCategory, insertWasteCategory, deleteWasteCategory } from '@/lib/supabase/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,13 +48,9 @@ export default function CategoriesPage() {
       return
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const { data: profile } = await getProfileRole(user.id)
 
-    if (profile?.role !== 'admin') {
+    if ((profile as { role: string } | null)?.role !== 'admin') {
       router.push('/dashboard')
       return
     }
@@ -105,10 +102,7 @@ export default function CategoriesPage() {
 
     try {
       if (editingCategory) {
-        const { error } = await supabase
-          .from('waste_categories')
-          .update(formData)
-          .eq('id', editingCategory.id)
+        const { error } = await updateWasteCategory(editingCategory.id, formData)
 
         if (error) throw error
 
@@ -117,9 +111,7 @@ export default function CategoriesPage() {
           description: 'Category updated successfully',
         })
       } else {
-        const { error } = await supabase
-          .from('waste_categories')
-          .insert(formData)
+        const { error } = await insertWasteCategory(formData)
 
         if (error) throw error
 
@@ -147,10 +139,7 @@ export default function CategoriesPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('waste_categories')
-        .delete()
-        .eq('id', categoryId)
+      const { error } = await deleteWasteCategory(categoryId)
 
       if (error) throw error
 

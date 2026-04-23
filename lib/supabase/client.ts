@@ -25,7 +25,7 @@ function isInvalidRefreshTokenError(error: unknown): boolean {
 }
 
 async function clearLocalAuthSession(
-  client: ReturnType<typeof createClient>
+  client: ReturnType<typeof createClient<Database>>
 ): Promise<void> {
   try {
     await client.auth.signOut({ scope: 'local' })

@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
+import { upsertProfile, getProfileRole } from '@/lib/supabase/queries'
 
 export const dynamic = 'force-dynamic'
 import { Button } from '@/components/ui/button'
@@ -55,24 +56,15 @@ function LoginForm() {
           ? data.user.user_metadata.name.trim()
           : data.user.email?.split('@')[0]) || 'User'
 
-      const { error: profileUpsertError } = await supabase
-        .from('profiles')
-        .upsert(
-          {
-            id: data.user.id,
-            name: displayName,
-          },
-          { onConflict: 'id' }
-        )
+      const { error: profileUpsertError } = await upsertProfile({
+        id: data.user.id,
+        name: displayName,
+      })
 
       if (profileUpsertError) throw profileUpsertError
 
       // Get user profile to determine role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
+      const { data: profile } = await getProfileRole(data.user.id)
 
       toast({
         title: 'Success',

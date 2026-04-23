@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { getProfileRole } from '@/lib/supabase/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,13 +49,9 @@ export default function VehiclesPage() {
       return
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const { data: profile } = await getProfileRole(user.id)
 
-    if (profile?.role !== 'admin') {
+    if ((profile as { role: string } | null)?.role !== 'admin') {
       router.push('/dashboard')
       return
     }

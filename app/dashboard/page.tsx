@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { getProfileRole } from '@/lib/supabase/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -48,23 +49,20 @@ export default function UserDashboard() {
         return
       }
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      const { data: profileData } = await getProfileRole(user.id)
 
       if (!profileData) {
         router.push('/login')
         return
       }
 
-      if (profileData.role === 'admin') {
+      const role = (profileData as { role: string }).role
+      if (role === 'admin') {
         router.push('/admin/dashboard')
         return
       }
 
-      if (profileData.role === 'driver') {
+      if (role === 'driver') {
         router.push('/driver/dashboard')
         return
       }
